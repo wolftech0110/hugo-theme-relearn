@@ -1,4 +1,5 @@
-import { init, search } from './lunr-adapter.js';
+//import { init, search } from './lunr-adapter.js';
+import { init, search } from './orama-adapter.js';
 
 (function(){
 
@@ -87,61 +88,63 @@ function executeSearch( value ) {
     var hint = document.querySelector('.searchhint');
     hint.innerText = '';
     results.textContent = '';
-    var a = search( value );
-    if( a.length ){
-        hint.innerText = resolvePlaceholders( window.T_N_results_found, [ value, a.length ] );
-        a.forEach( function(item){
-            var page = item.page;
-            var context = [];
-            if( item.matches ){
-                var numContextWords = 10;
-                var contextPattern = '(?:\\S+ +){0,' + numContextWords + '}\\S*\\b(?:' +
-                    item.matches.map( function(match){return match.replace(/\W/g, '\\$&')} ).join('|') +
-                    ')\\b\\S*(?: +\\S+){0,' + numContextWords + '}';
-                context = page.content.match(new RegExp(contextPattern, 'i'));
-            }
-            var divsuggestion = document.createElement('a');
-            divsuggestion.className = 'autocomplete-suggestion';
-            divsuggestion.setAttribute('data-term', value);
-            divsuggestion.setAttribute('data-title', page.title);
-            divsuggestion.setAttribute('href', window.relearn.relBaseUri + page.uri);
-            divsuggestion.setAttribute('data-context', context);
-            var divtitle = document.createElement('div');
-            divtitle.className = 'title';
-            divtitle.innerText = '» ' + page.title;
-            divsuggestion.appendChild( divtitle );
-            var divbreadcrumb = document.createElement('div');
-            divbreadcrumb.className = 'breadcrumbs';
-            divbreadcrumb.innerText = (page.breadcrumb || '');
-            divsuggestion.appendChild( divbreadcrumb );
-            if( context ){
-                var divcontext = document.createElement('div');
-                divcontext.className = 'context';
-                divcontext.innerText = (context || '');
-                divsuggestion.appendChild( divcontext );
-            }
-            results.appendChild( divsuggestion );
-        });
-        window.relearn.markSearch();
-    }
-    else if( value.length ) {
-        hint.innerText = resolvePlaceholders( window.T_No_results_found, [ value ] );
-    }
-    input.focus();
-    setTimeout( adjustContentWidth, 0 );
+    (async function(){
+        var a = await search( value );
+        if( a.length ){
+            hint.innerText = resolvePlaceholders( window.T_N_results_found, [ value, a.length ] );
+            a.forEach( function(item){
+                var page = item.page;
+                var context = [];
+                if( item.matches ){
+                    var numContextWords = 10;
+                    var contextPattern = '(?:\\S+ +){0,' + numContextWords + '}\\S*\\b(?:' +
+                        item.matches.map( function(match){return match.replace(/\W/g, '\\$&')} ).join('|') +
+                        ')\\b\\S*(?: +\\S+){0,' + numContextWords + '}';
+                    context = page.content.match(new RegExp(contextPattern, 'i'));
+                }
+                var divsuggestion = document.createElement('a');
+                divsuggestion.className = 'autocomplete-suggestion';
+                divsuggestion.setAttribute('data-term', value);
+                divsuggestion.setAttribute('data-title', page.title);
+                divsuggestion.setAttribute('href', window.relearn.relBaseUri + page.uri);
+                divsuggestion.setAttribute('data-context', context);
+                var divtitle = document.createElement('div');
+                divtitle.className = 'title';
+                divtitle.innerText = '» ' + page.title;
+                divsuggestion.appendChild( divtitle );
+                var divbreadcrumb = document.createElement('div');
+                divbreadcrumb.className = 'breadcrumbs';
+                divbreadcrumb.innerText = (page.breadcrumb || '');
+                divsuggestion.appendChild( divbreadcrumb );
+                if( context ){
+                    var divcontext = document.createElement('div');
+                    divcontext.className = 'context';
+                    divcontext.innerText = (context || '');
+                    divsuggestion.appendChild( divcontext );
+                }
+                results.appendChild( divsuggestion );
+            });
+            window.relearn.markSearch();
+        }
+        else if( value.length ) {
+            hint.innerText = resolvePlaceholders( window.T_No_results_found, [ value ] );
+        }
+        input.focus();
+        setTimeout( adjustContentWidth, 0 );
 
-	// if we are initiating search because of a browser history
-	// operation, we have to restore the scrolling postion the
-	// user previously has used; if this search isn't initiated
-	// by a browser history operation, it simply does nothing
-    var state = window.history.state || {};
-    state = Object.assign( {}, ( typeof state === 'object' ) ? state : {} );
-    if( state.hasOwnProperty( 'contentScrollTop' ) ){
-        window.setTimeout( function(){
-            elc.scrollTop = +state.contentScrollTop;
-        }, 10 );
-        return;
-    }
+        // if we are initiating search because of a browser history
+        // operation, we have to restore the scrolling postion the
+        // user previously has used; if this search isn't initiated
+        // by a browser history operation, it simply does nothing
+        var state = window.history.state || {};
+        state = Object.assign( {}, ( typeof state === 'object' ) ? state : {} );
+        if( state.hasOwnProperty( 'contentScrollTop' ) ){
+            window.setTimeout( function(){
+                elc.scrollTop = +state.contentScrollTop;
+            }, 10 );
+            return;
+        }
+    })();
 }
 
 function initSearchAfterLoad(){
@@ -158,8 +161,9 @@ function initSearchAfterLoad(){
         selectorToInsert: 'search:has(.searchbox)',
         selector: '#R-search-by',
         /* source is the callback to perform the search */
-        source: function( term, response ) {
-            response( search( term ) );
+        source: async function( term, response ) {
+            let a = await search( term )
+            response( a );
         },
         /* renderItem displays individual search results */
         renderItem: function( item, term ) {
