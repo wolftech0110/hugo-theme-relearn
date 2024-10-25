@@ -69,5 +69,5 @@
           {{- $file := (printf "js/lunr/lunr.%s.min.js" .) }}
         <script src="{{ $file | relURL}}{{ $assetBusting }}" defer></script>
         {{- end }}
-        <script src="{{ "js/search.js" | relURL }}{{ $assetBusting }}" defer></script>
+        <script src="{{ "js/search.js" | relURL }}{{ $assetBusting }}" type="module" defer></script>
       {{- end }}

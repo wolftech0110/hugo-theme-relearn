@@ -1592,8 +1592,8 @@ function initSearch() {
         });
     }
 
-    window.relearn.isSearchInit = true;
-    window.relearn.runInitialSearch && window.relearn.runInitialSearch();
+    window.relearn.isSearchInterfaceReady = true;
+    window.relearn.executeInitialSearch && window.relearn.executeInitialSearch();
 }
 
 function updateTheme( detail ){
