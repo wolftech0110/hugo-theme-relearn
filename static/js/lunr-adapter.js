@@ -57,7 +57,7 @@ Each array item needs the following layout:
 let lunrIndex, pagesIndex;
 
 function init() {
-    function initLunrIndex( index ){
+    function initIndex( index ){
         pagesIndex = index;
         // Set up Lunr by declaring the fields we use
         // Also provide their boost level for the ranking
@@ -93,7 +93,7 @@ function init() {
         js.src = index_js_url;
         js.setAttribute("async", "");
         js.onload = function(){
-            initLunrIndex(relearn_searchindex);
+            initIndex(relearn_searchindex);
         };
         js.onerror = function(e){
             console.error('Error getting Hugo index file');
@@ -129,7 +129,7 @@ function search(term) {
     term = term.replace( /[*:^~+-]/g, ' ' );
     var searchTerm = lunr.tokenizer( term ).reduce( function(a,token){return a.concat(searchPatterns(token.str))}, []).join(' ');
     return !searchTerm || !lunrIndex ? [] : lunrIndex.search(searchTerm).map(function(result) {
-        return { index: result.ref, matches: Object.keys(result.matchData.metadata), page: pagesIndex[ result.ref ] };
+        return { index: result.ref, matches: [ term, ...Object.keys(result.matchData.metadata) ], page: pagesIndex[ result.ref ] };
     });
 }
 
