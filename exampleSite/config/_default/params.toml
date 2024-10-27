@@ -290,7 +290,7 @@ sidebarmenus = [
 # Default: false
 # Hides hidden pages from the suggestions of the search box and the dedicated
 # search page.
-disableSearchHiddenPages = false
+disableSearchHiddenPages = true
 
 # Hide hidden pages for web crawlers.
 # Default: false
