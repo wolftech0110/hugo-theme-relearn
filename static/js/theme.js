@@ -1327,10 +1327,12 @@ function scrollToPositions() {
         return;
     }
 
-    var search = sessionStorage.getItem( window.relearn.absBaseUri+'/search-value' );
-    if( search && search.length ){
-        search = regexEscape( search );
-        var found = elementContains( search, elc );
+
+    var value = sessionStorage.getItem( window.relearn.absBaseUri+'/search-value' );
+    var words = (value ?? '') .split( ' ' ).filter( word => word.trim() != '' );
+    if( words && words.length ){
+        unmark();
+        var found = elementContains( words, elc );
         var searchedElem = found.length && found[ 0 ];
         if( searchedElem ){
             searchedElem.scrollIntoView();
@@ -1339,6 +1341,8 @@ function scrollToPositions() {
                 window.scroll( 0, scrolledY - 125 );
             }
         }
+        sessionStorage.setItem( window.relearn.absBaseUri+'/search-value', value );
+        mark();
         return;
     }
 
@@ -1371,7 +1375,7 @@ function mark() {
         bodyInnerLinks[i].classList.add( 'highlight' );
     }
 
-    var value = sessionStorage.getItem( window.relearn.absBaseUri + '/search-value' );
+    var value = (sessionStorage.getItem( window.relearn.absBaseUri + '/search-value' ) ?? '').split( ' ' ).filter( word => word.trim() != '' );
     var highlightableElements = document.querySelectorAll( '.highlightable' );
     highlight( highlightableElements, value, { element: 'mark', className: 'search' } );
 
@@ -1411,17 +1415,10 @@ function highlight( es, words, options ){
     };
     Object.assign( settings, options );
 
-    if( !words ){ return; }
-    if( words.constructor === String ){
-        words = [ words ];
-    }
-    words = words.filter( function( word, i ){
-        return word != '';
-    });
+    if( !words.length ){ return; }
     words = words.map( function( word, i ){
         return regexEscape( word );
     });
-    if( words.length == 0 ){ return this; }
 
     var flag = settings.caseSensitive ? '' : 'i';
     var pattern = "(" + words.join( '|' ) + ')';
@@ -1507,14 +1504,44 @@ function unhighlight( es, options ){
 };
 
 // replace jQuery.createPseudo with https://stackoverflow.com/a/66318392
-function elementContains( txt, e ){
-    var regex = RegExp( txt, 'i' );
+function elementContains( words, e ){
+    var settings = {
+        caseSensitive: false,
+        wordsOnly: false
+    };
+
+    if( !words.length ){ return; }
+    words = words.map( function( word, i ){
+        return regexEscape( word );
+    });
+
+    var flag = settings.caseSensitive ? '' : 'i';
+    var pattern = "(" + words.join( '\\s+' ) + ')';
+    if( settings.wordsOnly ){
+        pattern = '\\b' + pattern + '\\b';
+    }
+    var regex = new RegExp( pattern, flag );
+
     var nodes = [];
     if( e ){
         var tree = document.createTreeWalker( e, 4 /* NodeFilter.SHOW_TEXT */, function( node ){
             return regex.test( node.data );
         }, false );
         var node = null;
+        while( node = tree.nextNode() ){
+            nodes.push( node.parentElement );
+        }
+
+        var pattern = "(" + words.join( '|' ) + ')';
+        if( settings.wordsOnly ){
+            pattern = '\\b' + pattern + '\\b';
+        }
+        regex = new RegExp( pattern, flag );
+
+        tree = document.createTreeWalker( e, 4 /* NodeFilter.SHOW_TEXT */, function( node ){
+            return regex.test( node.data );
+        }, false );
+        node = null;
         while( node = tree.nextNode() ){
             nodes.push( node.parentElement );
         }
@@ -1537,7 +1564,7 @@ function initSearch() {
         e.addEventListener( 'keydown', function( event ){
             if( event.key == 'Escape' ){
                 var input = event.target;
-                var search = sessionStorage.getItem( window.relearn.absBaseUri+'/search-value' );
+                var search = (sessionStorage.getItem( window.relearn.absBaseUri+'/search-value' ) ?? '').split( ' ' ).filter( word => word.trim() != '' );
                 if( !search || !search.length ){
                     input.blur();
                 }

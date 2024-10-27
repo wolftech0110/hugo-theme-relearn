@@ -3,6 +3,10 @@ import { init, search } from './orama-adapter.js';
 
 (function(){
 
+function escapeRegex( string ){
+	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 window.relearn = window.relearn || {};
 
 window.relearn.executeInitialSearch =
@@ -95,12 +99,19 @@ function executeSearch( value ) {
             a.forEach( function(item){
                 var page = item.page;
                 var context = [];
-                if( item.matches ){
+                if( item.matches && item.matches.length ){
                     var numContextWords = 10;
                     var contextPattern = '(?:\\S+ +){0,' + numContextWords + '}\\S*\\b(?:' +
-                        item.matches.map( function(match){return match.replace(/\W/g, '\\$&')} ).join('|') +
+                        escapeRegex( item.matches[0] ) +
                         ')\\b\\S*(?: +\\S+){0,' + numContextWords + '}';
                     context = page.content.match(new RegExp(contextPattern, 'i'));
+                    if( !context ){
+                        item.matches.shift();
+                        var contextPattern = '(?:\\S+ +){0,' + numContextWords + '}\\S*\\b(?:' +
+                            item.matches.map( escapeRegex ).join('|') +
+                            ')\\b\\S*(?: +\\S+){0,' + numContextWords + '}';
+                        context = page.content.match(new RegExp(contextPattern, 'i'));
+                    }
                 }
                 var divsuggestion = document.createElement('a');
                 divsuggestion.className = 'autocomplete-suggestion';
@@ -169,12 +180,19 @@ function initSearchAfterLoad(){
         renderItem: function( item, term ) {
             var page = item.page;
             var context = [];
-            if( item.matches ){
+            if( item.matches && item.matches.length ){
                 var numContextWords = 2;
                 var contextPattern = '(?:\\S+ +){0,' + numContextWords + '}\\S*\\b(?:' +
-                    item.matches.map( function(match){return match.replace(/\W/g, '\\$&')} ).join('|') +
+                    escapeRegex( item.matches[0] ) +
                     ')\\b\\S*(?: +\\S+){0,' + numContextWords + '}';
                 context = page.content.match(new RegExp(contextPattern, 'i'));
+                if( !context ){
+                    item.matches.shift();
+                    var contextPattern = '(?:\\S+ +){0,' + numContextWords + '}\\S*\\b(?:' +
+                        item.matches.map( escapeRegex ).join('|') +
+                        ')\\b\\S*(?: +\\S+){0,' + numContextWords + '}';
+                    context = page.content.match(new RegExp(contextPattern, 'i'));
+                }
             }
             var divsuggestion = document.createElement('div');
             divsuggestion.className = 'autocomplete-suggestion';
